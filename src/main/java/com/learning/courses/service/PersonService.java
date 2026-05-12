@@ -1,13 +1,21 @@
 package com.learning.courses.service;
 
+import com.learning.courses.dto.ContactDTO;
+import com.learning.courses.dto.CreateContactDTO;
 import com.learning.courses.dto.CreatePersonDTO;
 import com.learning.courses.dto.PersonDTO;
 import com.learning.courses.exception.EntityNotFoundException;
+import com.learning.courses.mapper.ContactMapper;
 import com.learning.courses.mapper.PersonMapper;
+import com.learning.courses.model.Contact;
 import com.learning.courses.model.Person;
+import com.learning.courses.repository.ContactRepository;
 import com.learning.courses.repository.PersonRepository;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class PersonService {
 
   private final PersonRepository personRepository;
+  private final ContactRepository contactRepository;
   private final PersonMapper personMapper;
+  private final ContactMapper contactMapper;
 
   @Transactional
   public Long createPerson(CreatePersonDTO createPersonDTO) {
@@ -48,6 +58,72 @@ public class PersonService {
     person.setIdentityNumber(updatedPerson.getIdentityNumber());
     person = personRepository.save(person);
     return personMapper.toDTO(person);
+  }
+
+  @Transactional
+  public ContactDTO addContactForPerson(@NotNull @Positive Long personId, @Valid CreateContactDTO createContactDTO) {
+    Person person = personRepository.findById(personId)
+        .orElseThrow(() -> new EntityNotFoundException(personId, Person.class.getSimpleName()));
+
+    Contact contact = Contact.builder()
+        .email(createContactDTO.getEmail())
+        .address(createContactDTO.getAddress())
+        .phone(createContactDTO.getPhone())
+        .student(person)
+        .build();
+    contact = contactRepository.save(contact);
+
+    if (person.getStudentContact() == null) {
+      person.setStudentContact(new ArrayList<>());
+    }
+    person.getStudentContact().add(contact);
+    personRepository.save(person);
+
+    return contactMapper.toDTO(contact);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ContactDTO> getContactsForPerson(@NotNull @Positive Long personId) {
+    if (!personRepository.existsById(personId)) {
+      throw new EntityNotFoundException(personId, Person.class.getSimpleName());
+    }
+    return contactMapper.toDTO(contactRepository.findByStudent_Id(personId));
+  }
+
+  @Transactional(readOnly = true)
+  public ContactDTO getContactForPerson(@NotNull @Positive Long personId, @NotNull @Positive Long contactId) {
+    if (!personRepository.existsById(personId)) {
+      throw new EntityNotFoundException(personId, Person.class.getSimpleName());
+    }
+    return contactRepository.findByIdAndStudent_Id(contactId, personId)
+        .map(contactMapper::toDTO)
+        .orElseThrow(() -> new EntityNotFoundException(contactId, Contact.class.getSimpleName()));
+  }
+
+  @Transactional
+  public ContactDTO updateContactForPerson(
+      @NotNull @Positive Long personId,
+      @NotNull @Positive Long contactId,
+      @Valid CreateContactDTO createContactDTO) {
+    Contact contact = contactRepository.findByIdAndStudent_Id(contactId, personId)
+        .orElseThrow(() -> new EntityNotFoundException(contactId, Contact.class.getSimpleName()));
+    contact.setEmail(createContactDTO.getEmail());
+    contact.setAddress(createContactDTO.getAddress());
+    contact.setPhone(createContactDTO.getPhone());
+    return contactMapper.toDTO(contactRepository.save(contact));
+  }
+
+  @Transactional
+  public void deleteContactForPerson(@NotNull @Positive Long personId, @NotNull @Positive Long contactId) {
+    Contact contact = contactRepository.findByIdAndStudent_Id(contactId, personId)
+        .orElseThrow(() -> new EntityNotFoundException(contactId, Contact.class.getSimpleName()));
+    Person person = personRepository.findById(personId)
+        .orElseThrow(() -> new EntityNotFoundException(personId, Person.class.getSimpleName()));
+    if (person.getStudentContact() != null) {
+      person.getStudentContact().remove(contact);
+      personRepository.save(person);
+    }
+    contactRepository.delete(contact);
   }
 
 }

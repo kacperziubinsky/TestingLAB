@@ -22,4 +22,14 @@
              stripComments="true"/>
   </changeSet>
 
+  <changeSet id="02-add-contact-tables" author="system">
+    <sqlFile dbms="postgresql"
+             encoding="utf8"
+             endDelimiter=";"
+             path="02-add-contact-tables.sql"
+             relativeToChangelogFile="true"
+             splitStatements="true"
+             stripComments="true"/>
+  </changeSet>
+
 </databaseChangeLog>
