@@ -42,4 +42,9 @@ public class Person {
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "tutor")
   private List<Course> tutoringCourses;
 
+  @ManyToMany
+  @JoinTable(name = "person_contact",
+  joinColumns = @JoinColumn(name = "person_id"),
+  inverseJoinColumns = @JoinColumn(name = "contact_id") )
+  private List<Contact> studentContact;
 }

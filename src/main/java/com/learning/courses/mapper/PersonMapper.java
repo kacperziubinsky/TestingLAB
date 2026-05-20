@@ -14,6 +14,7 @@ public interface PersonMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "assignedCourses", ignore = true)
   @Mapping(target = "tutoringCourses", ignore = true)
+  @Mapping(target = "studentContact", ignore = true)
   Person toEntity(CreatePersonDTO createPersonDTO);
 
   PersonDTO toDTO(Person person);
