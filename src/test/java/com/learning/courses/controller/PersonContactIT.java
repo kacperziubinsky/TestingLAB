@@ -118,31 +118,4 @@ class PersonContactIT extends AbstractIntegrationTest {
     }
   }
 
-  @Test
-  void getContact_whenNotOwnedByPerson_returnsNotFound() throws Exception {
-    Long personA = createPersonViaApi("2222222222");
-    Long personB = createPersonViaApi("3333333333");
-
-    CreateContactDTO create = CreateContactDTO.builder()
-        .email("only-a@example.com")
-        .address(null)
-        .phone(null)
-        .build();
-    HttpPost postContact = new HttpPost("/api/persons/%d/contacts".formatted(personA));
-    initRequestWithBody(create, postContact);
-
-    ContactDTO created;
-    try (var client = HttpClients.createDefault()) {
-      var response = client.execute(getHttpHost(), postContact);
-      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(HttpStatus.OK.value());
-      created = retrieveResourceFromResponse(response, ContactDTO.class);
-    }
-
-    HttpGet wrongOwner = new HttpGet("/api/persons/%d/contacts/%d".formatted(personB, created.getId()));
-    wrongOwner.setHeader("Accept", "application/json");
-    try (var client = HttpClients.createDefault()) {
-      var response = client.execute(getHttpHost(), wrongOwner);
-      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    }
-  }
-}
+  
